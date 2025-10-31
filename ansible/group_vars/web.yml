@@ -1,0 +1,13 @@
+---
+# Application variables
+app_name: epicbook
+app_user: www-data
+app_group: www-data
+app_root: /var/www/epicbook
+repo_url: https://github.com/pravinmishraaws/theepicbook.git
+repo_branch: main
+
+# Nginx variables
+nginx_user: www-data
+nginx_worker_processes: auto
+nginx_port: 80

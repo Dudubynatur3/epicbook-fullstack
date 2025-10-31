@@ -1,0 +1,48 @@
+---
+# Main playbook for EpicBook deployment
+- name: Deploy EpicBook Application
+  hosts: web
+  become: true
+  
+  pre_tasks:
+    - name: Display deployment info
+      debug:
+        msg:
+          - "=========================================="
+          - "Deploying to: {{ inventory_hostname }}"
+          - "Target: {{ ansible_host }}"
+          - "Application: {{ app_name }}"
+          - "=========================================="
+
+  roles:
+    - role: common
+      tags: ['common', 'setup']
+    
+    - role: nginx
+      tags: ['nginx', 'webserver']
+    
+    - role: epicbook
+      tags: ['epicbook', 'app']
+
+  post_tasks:
+    - name: Final verification - HTTP test
+      uri:
+        url: http://localhost
+        status_code: 200
+        return_content: yes
+      register: http_result
+
+    - name: Verify content
+      fail:
+        msg: "Application content not found!"
+      when: "'<!DOCTYPE' not in http_result.content"
+
+    - name: Display success message
+      debug:
+        msg:
+          - "=========================================="
+          - "✅ EpicBook Deployment Successful!"
+          - "=========================================="
+          - "�� Access URL: http://{{ ansible_host }}"
+          - "📊 Status: {{ http_result.status }}"
+          - "=========================================="

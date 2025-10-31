@@ -1,0 +1,103 @@
+---
+- name: Remove old application directory
+  file:
+    path: "{{ app_root }}"
+    state: absent
+
+- name: Create application directory
+  file:
+    path: "{{ app_root }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Clone EpicBook repository
+  git:
+    repo: "{{ repo_url }}"
+    dest: "{{ app_root }}"
+    version: "{{ repo_branch }}"
+    force: yes
+    update: yes
+    accept_hostkey: yes
+  register: git_result
+
+- name: Display git clone result
+  debug:
+    var: git_result
+
+- name: Set ownership after clone
+  file:
+    path: "{{ app_root }}"
+    owner: "{{ app_user }}"
+    group: "{{ app_group }}"
+    recurse: yes
+
+- name: Install npm dependencies
+  npm:
+    path: "{{ app_root }}"
+    state: present
+
+- name: Install MySQL server
+  apt:
+    name: mysql-server
+    state: present
+    update_cache: yes
+
+- name: Install Python MySQL client (for Ansible)
+  apt:
+    name: python3-pymysql
+    state: present
+
+- name: Ensure MySQL is started and enabled
+  systemd:
+    name: mysql
+    state: started
+    enabled: yes
+
+- name: Create MySQL database
+  mysql_db:
+    name: bookstore
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+
+- name: Create MySQL user
+  mysql_user:
+    name: root
+    password: demo1234
+    host: localhost
+    priv: 'bookstore.*:ALL'
+    state: present
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+
+- name: Create systemd service for EpicBook
+  template:
+    src: epicbook.service.j2
+    dest: /etc/systemd/system/epicbook.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart epicbook
+
+- name: Enable and start EpicBook service
+  systemd:
+    name: epicbook
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Wait for application to start
+  wait_for:
+    port: 3000
+    delay: 5
+    timeout: 30
+  ignore_errors: yes
+
+- name: Display deployment info
+  debug:
+    msg:
+      - "✅ EpicBook Node.js application deployed"
+      - "Application: {{ app_name }}"
+      - "Path: {{ app_root }}"
+      - "Running on: http://localhost:3000"
+      - "Database: MySQL (bookstore)"
