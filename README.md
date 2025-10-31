@@ -140,7 +140,7 @@ This project is open source and available under the MIT License.
 
 ## 👤 Author
 
-**Samuel Akintade**
+**Aduroja Akintade**
 - GitHub: [@Dudubynatur3](https://github.com/Dudubynatur3)
 
 ---
